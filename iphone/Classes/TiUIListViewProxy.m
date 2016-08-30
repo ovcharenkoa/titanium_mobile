@@ -163,7 +163,7 @@
 		}
 	}];
 	TiThreadPerformOnMainThread(^{
-		[self.listView setDictTemplates_:templates];
+		[self.listView setTemplates_:templates];
 	}, NO);
 	[templates release];
 }

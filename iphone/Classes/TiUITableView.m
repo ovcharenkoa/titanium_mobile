@@ -1021,85 +1021,6 @@
 	[super handleListenerAddedWithEvent:event];
 }
 
--(void)recognizedSwipe:(UISwipeGestureRecognizer *)recognizer
-{
-    if ([[self proxy] _hasListeners:@"swipe"]) {
-    
-        NSString* swipeString;
-        switch ([recognizer direction]) {
-            case UISwipeGestureRecognizerDirectionUp:
-                swipeString = @"up";
-                break;
-            case UISwipeGestureRecognizerDirectionDown:
-                swipeString = @"down";
-                break;
-            case UISwipeGestureRecognizerDirectionLeft:
-                swipeString = @"left";
-                break;
-            case UISwipeGestureRecognizerDirectionRight:
-                swipeString = @"right";
-                break;
-            default:
-                swipeString = @"unknown";
-                break;
-        }
-        
-        
-        
-        BOOL viaSearch = [searchController isActive];
-        UITableView* theTableView = viaSearch ? [searchController searchResultsTableView] : [self tableView];
-        CGPoint point = [recognizer locationInView:theTableView];
-        CGPoint pointInView = [recognizer locationInView:self];
-        NSIndexPath* indexPath = nil;
-        
-        if (viaSearch) {
-            NSIndexPath* index = [theTableView indexPathForRowAtPoint:point];
-            if (index != nil) {
-                indexPath = [self indexPathFromSearchIndex:[index row]];
-            }
-        } else {
-            indexPath = [theTableView indexPathForRowAtPoint:point];
-        }
-        
-        
-        NSMutableDictionary *event = [[TiUtils pointToDictionary:pointInView] mutableCopy];
-        [event setValue:swipeString forKey:@"direction"];
-        [event setObject:NUMBOOL(NO) forKey:@"detail"];
-        [event setObject:NUMBOOL(viaSearch) forKey:@"search"];
-
-        if (indexPath != nil) {
-            //We have index path. Let us fill out section and row information. Also since the 
-            int sectionIdx = [indexPath section];
-            NSArray * sections = [(TiUITableViewProxy *)[self proxy] internalSections];
-            TiUITableViewSectionProxy *section = [self sectionForIndex:sectionIdx];
-            
-            int rowIndex = [indexPath row];
-            int dataIndex = 0;
-            int c = 0;
-            TiUITableViewRowProxy *row = [section rowAtIndex:rowIndex];
-            
-            // unfortunately, we have to scan to determine our row index
-            for (TiUITableViewSectionProxy *section in sections)
-            {
-                if (c == sectionIdx)
-                {
-                    dataIndex += rowIndex;
-                    break;
-                }
-                dataIndex += [section rowCount];
-                c++;
-            }
-            [event setObject:section forKey:@"section"];
-            [event setObject:row forKey:@"row"];
-            [event setObject:row forKey:@"rowData"];
-            [event setObject:NUMINT(dataIndex) forKey:@"index"];
-            
-        }
-        [[self proxy] fireEvent:@"swipe" withObject:event];
-        [event release];
-    }
-}
-
 -(void)longPressGesture:(UILongPressGestureRecognizer *)recognizer
 {
     if([[self proxy] _hasListeners:@"longpress"] && [recognizer state] == UIGestureRecognizerStateBegan)
@@ -1278,10 +1199,6 @@
 			[tableview setContentOffset:CGPointMake(0,0)];
 		}
 	}
-    
-	if(!searchActivated) {
-		[searchField ensureSearchBarHeirarchy];
-	}
 
 	[super frameSizeChanged:frame bounds:bounds];
 	
@@ -1446,9 +1363,6 @@
 	{
 		CGRect wrapperFrame = CGRectMake(0, 0, [tableview bounds].size.width, TI_NAVBAR_HEIGHT);
 		tableHeaderView = [[UIView alloc] initWithFrame:wrapperFrame];
-		[tableHeaderView setAutoresizingMask:UIViewAutoresizingFlexibleWidth];
-		[searchView setAutoresizingMask:UIViewAutoresizingFlexibleWidth];
-		[[searchField searchBar] setAutoresizingMask:UIViewAutoresizingFlexibleWidth];
 		[TiUtils setView:searchView positionRect:wrapperFrame];
 		[tableHeaderView addSubview:searchView];
 		[tableview setTableHeaderView:tableHeaderView];
@@ -2530,7 +2444,13 @@ return result;	\
 
     //IOS7 DP3. TableView seems to be adding the searchView to
     //tableView. Bug on IOS7?
-    [searchField ensureSearchBarHeirarchy];
+    if ([TiUtils isIOS7OrGreater]) {
+        if (![[[controller searchBar] superview] isKindOfClass:[TiUIView class]]) {
+            if ([[searchField view] respondsToSelector:@selector(searchBar)]) {
+                [[searchField view] performSelector:@selector(searchBar)];
+            }
+        }
+    }
     animateHide = YES;
     [self performSelector:@selector(hideSearchScreen:) withObject:nil afterDelay:0.2];
 }

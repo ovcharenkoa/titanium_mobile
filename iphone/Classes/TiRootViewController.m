@@ -1290,7 +1290,6 @@
 -(void)viewDidAppear:(BOOL)animated
 {
     isCurrentlyVisible = YES;
-    [self.view becomeFirstResponder];
     if ([containedWindows count] > 0) {
         for (id<TiWindowProtocol> thisWindow in containedWindows) {
             [thisWindow viewDidAppear:animated];

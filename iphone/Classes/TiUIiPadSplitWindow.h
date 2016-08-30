@@ -15,7 +15,6 @@
 
 #import "TiUIView.h"
 #import "MGSplitViewController.h"
-#import "TiUIiPadSplitWindowProxy.h"
 
 @class TiUIiPadPopoverProxy;
 

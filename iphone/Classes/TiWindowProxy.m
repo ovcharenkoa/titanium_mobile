@@ -61,10 +61,10 @@
     opened = YES;
     if ([self _hasListeners:@"open"]) {
         [self fireEvent:@"open" withObject:nil withSource:self propagate:NO reportSuccess:NO errorCode:0 message:nil];
-    }
-    if (focussed && [self handleFocusEvents]) {
-        if ([self _hasListeners:@"focus"]) {
-            [self fireEvent:@"focus" withObject:nil withSource:self propagate:NO reportSuccess:NO errorCode:0 message:nil];
+        if (focussed && [self handleFocusEvents]) {
+            if ([self _hasListeners:@"focus"]) {
+                [self fireEvent:@"focus" withObject:nil withSource:self propagate:NO reportSuccess:NO errorCode:0 message:nil];
+            }
         }
     }
     [super windowDidOpen];
@@ -508,8 +508,10 @@
     if (isModal && opening) {
         [self windowDidOpen];
     }
-    if (controller != nil && !self.isManaged) {
-        [self gainFocus];
+    if (controller != nil) {
+        if (tab == nil) {
+            [self gainFocus];
+        }
     }
 }
 -(void)viewDidDisappear:(BOOL)animated

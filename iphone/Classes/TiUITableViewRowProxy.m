@@ -636,7 +636,7 @@ TiProxy * DeepScanForProxyOfViewContainingPoint(UIView * targetView, CGPoint poi
 
 -(BOOL)viewAttached
 {
-	return (callbackCell != nil) && (callbackCell.proxy == self);
+	return callbackCell != nil;
 }
 
 -(BOOL)canHaveControllerParent
@@ -874,36 +874,17 @@ TiProxy * DeepScanForProxyOfViewContainingPoint(UIView * targetView, CGPoint poi
 	attaching = NO;
 }
 
--(void)triggerUpdateIfHeightChanged
-{
-    TiThreadPerformOnMainThread(^{
-        if ([self viewAttached] && rowContainerView != nil) {
-            CGFloat curHeight = rowContainerView.bounds.size.height;
-            CGSize newSize = [callbackCell computeCellSize];
-            if (newSize.height != curHeight) {
-                DeveloperLog(@"Height changing from %.1f to %.1f. Triggering update.",curHeight,newSize.height);
-                [self triggerRowUpdate];
-            } else {
-                DeveloperLog(@"Height does not change. Just laying out children. Height %.1f",curHeight);
-                [callbackCell setNeedsDisplay];
-            }
-        } else {
-            [callbackCell setNeedsDisplay];
-        }
-    }, NO);
-}
-
 -(void)contentsWillChange
 {
 	if (attaching==NO)
 	{
-		[self triggerUpdateIfHeightChanged];
+		[self triggerRowUpdate];
 	}
 }
 
 -(void)childWillResize:(TiViewProxy *)child
 {
-	[self triggerUpdateIfHeightChanged];
+	[self triggerRowUpdate];
 }
 
 -(TiProxy *)touchedViewProxyInCell:(UITableViewCell *)targetCell atPoint:(CGPoint*)point
@@ -968,32 +949,26 @@ TiProxy * DeepScanForProxyOfViewContainingPoint(UIView * targetView, CGPoint poi
 
 -(void)setSelectedBackgroundColor:(id)arg
 {
-    [self replaceValue:arg forKey:@"selectedBackgroundColor" notification:NO];
-    TiThreadPerformOnMainThread(^{
-        if ([self viewAttached]) {
-            [self configureBackground:callbackCell];
-        }
-    }, NO);
+	[self replaceValue:arg forKey:@"selectedBackgroundColor" notification:NO];	
+	if (callbackCell != nil) {
+		[self configureBackground:callbackCell];
+	}
 }
 
 -(void)setBackgroundImage:(id)arg
 {
 	[self replaceValue:arg forKey:@"backgroundImage" notification:NO];	
-    TiThreadPerformOnMainThread(^{
-        if ([self viewAttached]) {
-            [self configureBackground:callbackCell];
-        }
-    }, NO);
+	if (callbackCell != nil) {
+		[self configureBackground:callbackCell];
+	}
 }
 
 -(void)setSelectedBackgroundImage:(id)arg
 {
 	[self replaceValue:arg forKey:@"selectedBackgroundImage" notification:NO];	
-    TiThreadPerformOnMainThread(^{
-        if ([self viewAttached]) {
-            [self configureBackground:callbackCell];
-        }
-    }, NO);
+	if (callbackCell != nil) {
+		[self configureBackground:callbackCell];
+	}
 }
 
 -(void)setBackgroundGradient:(id)arg
@@ -1025,34 +1000,10 @@ TiProxy * DeepScanForProxyOfViewContainingPoint(UIView * targetView, CGPoint poi
 					nil];
 	}
 	
-    if ([TableViewRowProperties member:key]!=nil)
-    {
-        TiThreadPerformOnMainThread(^{
-            if (![self viewAttached]) {
-                return;
-            }
-            if ([key isEqualToString:@"height"] || [key isEqualToString:@"width"] || [key isEqualToString:@"indentionLevel"]) {
-                [self triggerRowUpdate];
-            } else if ([key isEqualToString:@"title"] || [key isEqualToString:@"color"] || [key isEqualToString:@"font"] || [key isEqualToString:@"selectedColor"]) {
-                [self configureTitle:callbackCell];
-                [callbackCell setNeedsDisplay];
-            } else if ([key isEqualToString:@"hasCheck"] || [key isEqualToString:@"hasChild"] || [key isEqualToString:@"hasDetail"] || [key isEqualToString:@"rightImage"]) {
-                [self configureRightSide:callbackCell];
-                [self triggerUpdateIfHeightChanged];
-            } else if ([key isEqualToString:@"leftImage"]) {
-                [self configureLeftSide:callbackCell];
-                [self triggerUpdateIfHeightChanged];
-            } else if ([key isEqualToString:@"backgroundImage"]) {
-                [self configureBackground:callbackCell];
-                [callbackCell setNeedsDisplay];
-            } else if ([key isEqualToString:@"backgroundColor"]) {
-                [callbackCell setBackgroundColor:[[TiUtils colorValue:newValue] color]];
-                [callbackCell setNeedsDisplay];
-            } else if ([key isEqualToString:@"accessibilityLabel"]){
-                callbackCell.accessibilityLabel = [TiUtils stringValue:newValue];
-            }
-        }, NO);
-    }
+	if ([TableViewRowProperties member:key]!=nil)
+	{
+		[self triggerRowUpdate];
+	}
 }
 
 -(TiDimension)defaultAutoHeightBehavior:(id)unused

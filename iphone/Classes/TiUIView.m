@@ -700,23 +700,30 @@ DEFINE_EXCEPTIONS
 	}
 	
 	animationDelayGuard = 0;
-    BOOL resetState = NO;
+    //TIMOB-13237. Wait for layout to finish before animating.
+    //TODO. This is a hack. When we implement the polynomial layout for iOS we will be able to do
+    //a full layout of this view and associated views in the animation block.
     if ([self.proxy isKindOfClass:[TiViewProxy class]] && [(TiViewProxy*)self.proxy willBeRelaying]) {
-        DeveloperLog(@"RESETTING STATE");
-        resetState = YES;
+		DebugLog(@"[DEBUG] Ti.View.animate() called while view waiting to relayout: Will re-attempt", self);
+		if (animationDelayGuardForLayout++ > 2) {
+            DebugLog(@"[DEBUG] Animation guard triggered, exceeded timeout for layout to occur. Continuing.");
+        } else {
+            [self performSelector:@selector(animate:) withObject:newAnimation afterDelay:0.02];
+            return;
+        }
     }
-    
     animationDelayGuardForLayout = 0;    
 
-    if (newAnimation != nil) {
-        RELEASE_TO_NIL(animation);
-        animation = [newAnimation retain];
-        animation.resetState = resetState;
-        [animation animate:self];
-    }
-    else {
-        DebugLog(@"[WARN] Ti.View.animate() (view %@) could not make animation from: %@", self, newAnimation);
-    }
+	if (newAnimation != nil)
+	{
+		RELEASE_TO_NIL(animation);
+		animation = [newAnimation retain];
+		[animation animate:self];
+	}	
+	else
+	{
+		DebugLog(@"[WARN] Ti.View.animate() (view %@) could not make animation from: %@", self, newAnimation);
+	}
 }
 -(void)animationStarted
 {
