@@ -7,6 +7,7 @@
 # Entry point Makefile for ndk-build
 
 APP_BUILD_SCRIPT = src/native/Android.mk
+APP_CFLAGS += -Wno-error=format-security
 TARGET_PLATFORM = android-10
 APP_STL := stlport_shared
 ifeq ($(BUILD_X86), 1)
@@ -18,4 +19,4 @@ endif
 
 TARGET_DEVICE := device
 APP_OPTIM := release
-TI_DEBUG := 1
+TI_DEBUG := 0
