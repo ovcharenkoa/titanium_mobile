@@ -644,7 +644,7 @@ class Builder(object):
 
 		devices = self.sdk.list_devices()
 		for device in devices:
-			if device.is_emulator() and device.get_port() == 5560:
+			if device.is_emulator() and device.get_port() == 5560 or device.get_port() == 5555:
 				info("Emulator is running.")
 				sys.exit()
 
@@ -1588,7 +1588,7 @@ class Builder(object):
 			classpath = os.pathsep.join([classpath, self.kroll_apt_jar])
 
 		classpath = os.pathsep.join([classpath, os.path.join(self.support_dir, 'lib', 'titanium-verify.jar')])
-		if self.deploy_type != 'production':
+		if self.deploy_type != 'test':
 			classpath = os.pathsep.join([classpath, os.path.join(self.support_dir, 'lib', 'titanium-debug.jar')])
 			classpath = os.pathsep.join([classpath, os.path.join(self.support_dir, 'lib', 'titanium-profiler.jar')])
 
@@ -1827,22 +1827,22 @@ class Builder(object):
 		ap_ = os.path.join(self.project_dir, 'bin', 'app.ap_')
 
 		# This is only to check if this has been overridden in production
-		has_compile_js = self.tiappxml.has_app_property("ti.android.compilejs")
-		compile_js = not has_compile_js or (has_compile_js and \
-			self.tiappxml.to_bool(self.tiappxml.get_app_property('ti.android.compilejs')))
+		#has_compile_js = self.tiappxml.has_app_property("ti.android.compilejs")
+		#compile_js = not has_compile_js or (has_compile_js and \
+		#	self.tiappxml.to_bool(self.tiappxml.get_app_property('ti.android.compilejs')))
 
 		# JS files referenced in html files and thus likely needed for webviews.
 		webview_js_files = []
 
 		pkg_assets_dir = self.assets_dir
-		if self.deploy_type == "test":
+		if self.deploy_type == "production":
 			compile_js = False
 
-		if compile_js and os.environ.has_key('SKIP_JS_MINIFY'):
+		if compile_js:
 			compile_js = False
 			info("Disabling JavaScript minification")
 
-		if self.deploy_type == "production" and compile_js:
+		if self.deploy_type == "test" and compile_js:
 			webview_js_files = get_js_referenced_in_html()
 			non_js_assets = os.path.join(self.project_dir, 'bin', 'non-js-assets')
 			if not os.path.exists(non_js_assets):
@@ -2060,12 +2060,13 @@ class Builder(object):
 			if self.device_args == None:
 				self.device_args = ['-d']
 			if keystore == None:
-				deploy_type = 'test'
-			else:
 				deploy_type = 'production'
+			else:
+				deploy_type = 'test'
 		if self.device_args == None:
 			self.device_args = ['-e']
 
+		info("Deploy type: %s " % deploy_type)
 		self.deploy_type = deploy_type
 		(java_failed, java_status) = prereq.check_java()
 		if java_failed:
@@ -2166,7 +2167,7 @@ class Builder(object):
 		self.sdcard_resources = '/sdcard/Ti.debug/%s/Resources' % self.app_id
 
 		self.resources_installed = False
-		if deploy_type == "production":
+		if deploy_type == "test":
 			self.app_installed = False
 		else:
 			self.app_installed = not build_only and self.is_app_installed()
@@ -2255,7 +2256,7 @@ class Builder(object):
 				if self.tiapp.to_bool(self.tiapp.get_app_property('ti.android.compilejs')):
 					self.compile_js = True
 			elif self.tiapp.has_app_property('ti.deploytype'):
-				if self.tiapp.get_app_property('ti.deploytype') == 'production':
+				if self.tiapp.get_app_property('ti.deploytype') == 'test':
 					self.compile_js = True
 
 			if self.compile_js and os.environ.has_key('SKIP_JS_MINIFY'):
@@ -2333,7 +2334,7 @@ class Builder(object):
 			generated_classes_built = self.build_generated_classes()
 
 			# TODO: enable for "test" / device mode for debugger / fastdev
-			if not self.build_only and (self.deploy_type == "development" or self.deploy_type == "test"):
+			if not self.build_only and (self.deploy_type == "development" or self.deploy_type == "production"):
 				self.push_deploy_json()
 			self.classes_dex = os.path.join(self.project_dir, 'bin', 'classes.dex')
 
@@ -2344,7 +2345,7 @@ class Builder(object):
 			self.support_deltas = support_deltafy.scan()
 
 			dex_built = False
-			if len(self.support_deltas) > 0 or generated_classes_built or self.deploy_type == "production":
+			if len(self.support_deltas) > 0 or generated_classes_built or self.deploy_type == "test":
 				# the dx.bat that ships with android in windows doesn't allow command line
 				# overriding of the java heap space, so we call the jar directly
 				if platform.system() == 'Windows':
@@ -2374,7 +2375,7 @@ class Builder(object):
 				dex_args += self.module_jars
 
 				dex_args.append(os.path.join(self.support_dir, 'lib', 'titanium-verify.jar'))
-				if self.deploy_type != 'production':
+				if self.deploy_type != 'test':
 					dex_args.append(os.path.join(self.support_dir, 'lib', 'titanium-debug.jar'))
 					dex_args.append(os.path.join(self.support_dir, 'lib', 'titanium-profiler.jar'))
 					# the verifier depends on Ti.Network classes, so we may need to inject it

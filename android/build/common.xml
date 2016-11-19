@@ -511,7 +511,7 @@ Common ant tasks and macros for building Android-based Titanium modules and proj
 	</target>
 
 	<target name="build.titanium.jar" depends="build.titanium">
-		<!-- TODO retrieve git hash / value from titanium_version.py-->
+		<!-- TODO: retrieve git hash / value from titanium_version.py -->
 		<property name="build.githash" value="HEAD"/>
 		<property name="dest.file" value="${dist.dir}/titanium.jar"/>
 
